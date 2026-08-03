@@ -1,0 +1,49 @@
+{
+  "version": "0.2.2",
+  "generatedAt": "2026-08-03T02:49:32.326Z",
+  "sourceFiles": [
+    "src/css/tokens.css",
+    "src/css/base.css",
+    "src/css/components.css",
+    "src/css/views.css",
+    "src/js/config.js",
+    "src/js/utils/dom.js",
+    "src/js/utils/platform.js",
+    "src/js/core/seeded-random.js",
+    "src/js/content/content-pack-registry.js",
+    "src/js/storage/settings-store.js",
+    "src/js/storage/database.js",
+    "src/js/campaign/campaign-generator.js",
+    "src/js/storage/campaign-store.js",
+    "src/js/ui/preferences.js",
+    "src/js/ui/router.js",
+    "src/js/ui/toast.js",
+    "src/js/ui/service-worker.js",
+    "src/js/views/home-view.js",
+    "src/js/views/create-campaign-view.js",
+    "src/js/views/campaign-view.js",
+    "src/js/views/archive-view.js",
+    "src/js/views/settings-view.js",
+    "src/js/views/system-view.js",
+    "src/js/app.js",
+    "src/js/main.js"
+  ],
+  "deployFiles": [
+    "index.html",
+    "offline.html",
+    "manifest.webmanifest",
+    "sw.js",
+    "app.bundle.css",
+    "app.bundle.js",
+    "favicon.svg",
+    "icon-192.png",
+    "icon-512.png",
+    "icon-maskable-192.png",
+    "icon-maskable-512.png",
+    "apple-touch-icon.png"
+  ],
+  "hashes": {
+    "app.bundle.css": "4c14f278b61455150a32458a1b85794d287b81d593e8d1b942100f4d73ea3f5d",
+    "app.bundle.js": "24cfeb55e136df3169c1b2c0223959266035b27bd204449e0cc612483273c23d"
+  }
+}
