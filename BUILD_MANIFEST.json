@@ -1,0 +1,43 @@
+{
+  "version": "0.1.0",
+  "generatedAt": "2026-08-02T22:41:41.366Z",
+  "sourceFiles": [
+    "src/css/tokens.css",
+    "src/css/base.css",
+    "src/css/components.css",
+    "src/css/views.css",
+    "src/js/config.js",
+    "src/js/utils/dom.js",
+    "src/js/utils/platform.js",
+    "src/js/core/seeded-random.js",
+    "src/js/storage/settings-store.js",
+    "src/js/storage/database.js",
+    "src/js/ui/preferences.js",
+    "src/js/ui/router.js",
+    "src/js/ui/toast.js",
+    "src/js/ui/service-worker.js",
+    "src/js/views/home-view.js",
+    "src/js/views/settings-view.js",
+    "src/js/views/system-view.js",
+    "src/js/app.js",
+    "src/js/main.js"
+  ],
+  "deployFiles": [
+    "index.html",
+    "offline.html",
+    "manifest.webmanifest",
+    "sw.js",
+    "app.bundle.css",
+    "app.bundle.js",
+    "favicon.svg",
+    "icon-192.png",
+    "icon-512.png",
+    "icon-maskable-192.png",
+    "icon-maskable-512.png",
+    "apple-touch-icon.png"
+  ],
+  "hashes": {
+    "app.bundle.css": "f03191b15afef6aa5260da1d65ccdb014afd57056ae1d84628c4e7376127da42",
+    "app.bundle.js": "7abbe7019f33f68f5bb766c399ed384daebbe490ece6e606b3334939a4069f61"
+  }
+}
