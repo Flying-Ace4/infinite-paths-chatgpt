@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '0.2.0';
 const CACHE_PREFIX = 'infinite-paths';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-v${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v${APP_VERSION}`;

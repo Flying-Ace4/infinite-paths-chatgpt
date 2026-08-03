@@ -1,4 +1,4 @@
-/* Infinite Paths v0.1.0 | generated from modular source | do not edit this bundle directly */
+/* Infinite Paths v0.2.0 | generated from modular source | do not edit this bundle directly */
 
 /* ===== src/js/config.js ===== */
 (function (root, factory) {
@@ -13,18 +13,19 @@
 
   const APP_CONFIG = Object.freeze({
     name: 'Infinite Paths',
-    version: '0.1.0',
-    buildId: 'foundation-2026-08-02',
-    milestone: 'Milestone 1: Installable Application Shell',
-    rulesVersion: '0.1.0',
+    version: '0.2.0',
+    buildId: 'campaign-identity-2026-08-02',
+    milestone: 'Milestone 2A: Campaign Identity and Creation',
+    rulesVersion: '0.2.0',
     contentSchemaVersion: 1,
+    contentVersion: 'horror-foundation-0.1.0',
     saveFormatVersion: 1,
     preferencesSchemaVersion: 1,
     database: Object.freeze({
       name: 'infinite-paths',
       version: 1,
     }),
-    routes: Object.freeze(['home', 'settings', 'system']),
+    routes: Object.freeze(['home', 'new', 'campaign', 'archive', 'settings', 'system']),
   });
 
   return { APP_CONFIG };
@@ -804,6 +805,196 @@
   };
 });
 
+/* ===== src/js/campaign/campaign-generator.js ===== */
+(function (root, factory) {
+  const namespace = (root.InfinitePaths = root.InfinitePaths || {});
+  const exported = factory(namespace);
+  Object.assign(namespace, exported);
+  if (typeof module !== 'undefined' && module.exports) module.exports = exported;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (IP) {
+  'use strict';
+
+  const BACKGROUNDS = Object.freeze({
+    ranger: { id: 'ranger', name: 'Former Park Ranger', skill: 'fieldcraft', resource: 'flare' },
+    paramedic: { id: 'paramedic', name: 'Paramedic', skill: 'medicine', resource: 'traumaKit' },
+    journalist: { id: 'journalist', name: 'Investigative Journalist', skill: 'inquiry', resource: 'recorder' },
+    mechanic: { id: 'mechanic', name: 'Rural Mechanic', skill: 'repair', resource: 'toolRoll' },
+  });
+
+  const WORLD_DATA = Object.freeze({
+    regions: ['Black Pine County', 'Morrow Vale', 'Ashwater District', 'Coldwater Reach', 'Hollow Ridge'],
+    incidents: ['The Vanishing Broadcast', 'The Long Night', 'The Bellweather Disappearance', 'The Ashwater Silence', 'The Hollow Road'],
+    settlements: ['Bellweather', 'Saint Orison', 'Miller’s Crossing', 'Grayhaven', 'Foxglove'],
+    sites: ['an abandoned fire lookout', 'a flooded limestone quarry', 'a shuttered roadside hospital', 'a decommissioned radio station', 'a forest chapel sealed since 1978'],
+    threats: [
+      { name: 'The Listener', capability: 'It can follow voices carried through powered radios.', limitation: 'It cannot hear unamplified speech beyond ordinary human range.' },
+      { name: 'The Pale Surveyor', capability: 'It marks occupied buildings and returns after sunset.', limitation: 'It cannot cross running water and never enters an unmarked structure.' },
+      { name: 'The Borrowed Man', capability: 'It can imitate the posture and handwriting of people it has observed.', limitation: 'It cannot imitate a living voice and casts no reflection.' },
+      { name: 'The Orchard Widow', capability: 'She can induce waking visions in anyone who eats fruit from the old orchard.', limitation: 'Her influence ends beyond the county boundary and cannot affect the fasting.' },
+    ],
+    factions: [
+      { name: 'County Emergency Office', agenda: 'Contain panic and preserve the evacuation route.' },
+      { name: 'The Night Frequency Club', agenda: 'Record proof before authorities erase it.' },
+      { name: 'Saint Orison Volunteer Search', agenda: 'Recover the missing, even after official operations stop.' },
+      { name: 'Morrow Land Company', agenda: 'Keep the oldest property records sealed.' },
+      { name: 'The Lantern House', agenda: 'Protect families who survived an earlier incident.' },
+    ],
+    truths: [
+      'The first disappearance was staged to conceal a failed containment operation.',
+      'The emergency broadcast repeats because someone is still transmitting from inside the exclusion zone.',
+      'The county map omits a settlement whose residents were never officially declared dead.',
+      'The apparent haunting began as a human crime, but the cover-up awakened something real.',
+    ],
+  });
+
+  function cleanText(value, maximum = 80) {
+    return String(value || '').normalize('NFKC').trim().replace(/\s+/g, ' ').slice(0, maximum);
+  }
+
+  function campaignId(seed, createdAt) {
+    const fingerprint = IP.SeededRandom.fingerprint(`${seed}::${createdAt}`).replaceAll('-', '').slice(0, 16).toLowerCase();
+    return `cmp_${fingerprint}`;
+  }
+
+  function generateHorrorWorld(seed) {
+    const geography = new IP.SeededRandom(seed).derive('world.geography');
+    const threatRng = new IP.SeededRandom(seed).derive('world.antagonist');
+    const factionRng = new IP.SeededRandom(seed).derive('world.factions');
+    const truthRng = new IP.SeededRandom(seed).derive('world.mystery');
+    const region = geography.pick(WORLD_DATA.regions);
+    const settlement = geography.pick(WORLD_DATA.settlements);
+    const incident = geography.pick(WORLD_DATA.incidents);
+    const majorSites = geography.shuffle(WORLD_DATA.sites).slice(0, 3);
+    const threat = threatRng.pick(WORLD_DATA.threats);
+    const factions = factionRng.shuffle(WORLD_DATA.factions).slice(0, 3);
+    const hiddenTruth = truthRng.pick(WORLD_DATA.truths);
+    return {
+      worldId: IP.SeededRandom.fingerprint(`${seed}::world`).replaceAll('-', '').toLowerCase(),
+      title: `${incident}: ${region}`,
+      region,
+      settlement,
+      geography: { majorSites, travelRule: 'Travel between major locations consumes one time segment.' },
+      factions,
+      antagonist: {
+        id: `threat_${threat.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+        name: threat.name,
+        capabilities: [threat.capability],
+        limitations: [threat.limitation],
+        knowledge: ['The exclusion zone', 'Its established hunting rule'],
+      },
+      hiddenTruth,
+      timeline: [
+        { day: -21, event: 'The first unexplained disappearance is recorded.' },
+        { day: -3, event: 'County officials quietly close the northern road.' },
+        { day: 0, event: 'The protagonist enters the affected region.' },
+      ],
+      victoryConditions: ['Identify the hidden truth and escape with credible evidence.', 'Protect at least one essential witness and end the immediate threat.'],
+      failureConditions: ['Death or irreversible capture.', 'The final evacuation route closes before the truth is secured.', 'The threat escapes containment because its known rule is violated.'],
+    };
+  }
+
+  function validateCampaignInput(input) {
+    const name = cleanText(input?.name, 40);
+    if (name.length < 1) throw new RangeError('Enter a protagonist name.');
+    const background = BACKGROUNDS[input?.background];
+    if (!background) throw new RangeError('Choose a valid background.');
+    const difficulty = ['story', 'standard', 'hard', 'brutal'].includes(input?.difficulty) ? input.difficulty : 'standard';
+    const length = ['short', 'standard'].includes(input?.length) ? input.length : 'short';
+    const presentation = ['he', 'she', 'they'].includes(input?.presentation) ? input.presentation : 'they';
+    let seed = cleanText(input?.seed, 120);
+    if (!seed) seed = IP.createFreshSeed('PATH');
+    return { name, background, difficulty, length, presentation, seed, genre: 'horror' };
+  }
+
+  function generateCampaign(input, now = () => new Date().toISOString()) {
+    const settings = validateCampaignInput(input);
+    const createdAt = now();
+    const world = generateHorrorWorld(settings.seed);
+    const id = campaignId(settings.seed, createdAt);
+    const background = settings.background;
+    const campaign = {
+      id,
+      schemaVersion: 1,
+      saveFormatVersion: IP.APP_CONFIG.saveFormatVersion,
+      contentVersion: IP.APP_CONFIG.contentVersion,
+      rulesVersion: IP.APP_CONFIG.rulesVersion,
+      status: 'created',
+      genre: settings.genre,
+      difficulty: settings.difficulty,
+      length: settings.length,
+      seed: settings.seed,
+      seedFingerprint: IP.SeededRandom.fingerprint(settings.seed),
+      title: world.title,
+      protagonist: { name: settings.name, presentation: settings.presentation, background },
+      contentPreferences: { graphicViolence: input?.graphicViolence !== false, psychologicalHorror: input?.psychologicalHorror !== false },
+      world,
+      randomStreams: {
+        campaignStructure: new IP.SeededRandom(settings.seed).derive('campaign.structure').snapshot(),
+        sceneSelectionAct1: new IP.SeededRandom(settings.seed).derive('scene.selection.act:1').snapshot(),
+      },
+      currentScene: null,
+      createdAt,
+      updatedAt: createdAt,
+    };
+    const save = {
+      id: `${id}:autosave`, campaignId: id, slotType: 'autosave', slotNumber: 0,
+      saveFormatVersion: campaign.saveFormatVersion, checksum: IP.SeededRandom.fingerprint(JSON.stringify(campaign)),
+      payload: { campaignId: id, status: 'created', worldState: {}, currentScene: null, eventHistory: [], inventory: [background.resource], injuries: [], clues: [], relationships: {} },
+      createdAt, updatedAt: createdAt,
+    };
+    const archive = {
+      id, campaignId: id, title: campaign.title, genre: campaign.genre, seed: campaign.seed,
+      difficulty: campaign.difficulty, length: campaign.length, protagonist: campaign.protagonist.name,
+      status: 'active', outcome: null, createdAt, updatedAt: createdAt, contentVersion: campaign.contentVersion,
+    };
+    return { campaign, save, archive };
+  }
+
+  return { BACKGROUNDS, generateCampaign, generateHorrorWorld, validateCampaignInput };
+});
+
+/* ===== src/js/storage/campaign-store.js ===== */
+(function (root, factory) {
+  const namespace = (root.InfinitePaths = root.InfinitePaths || {});
+  const exported = factory(namespace);
+  Object.assign(namespace, exported);
+  if (typeof module !== 'undefined' && module.exports) module.exports = exported;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (IP) {
+  'use strict';
+
+  class CampaignStore {
+    constructor(database) { this.database = database; }
+
+    async createBundle(bundle) {
+      const db = await this.database.open();
+      const tx = db.transaction([IP.STORE_NAMES.campaigns, IP.STORE_NAMES.saves, IP.STORE_NAMES.archives, IP.STORE_NAMES.appMeta], 'readwrite');
+      const campaignStore = tx.objectStore(IP.STORE_NAMES.campaigns);
+      campaignStore.add(bundle.campaign);
+      tx.objectStore(IP.STORE_NAMES.saves).add(bundle.save);
+      tx.objectStore(IP.STORE_NAMES.archives).add(bundle.archive);
+      tx.objectStore(IP.STORE_NAMES.appMeta).put({ key: 'lastCampaignId', value: bundle.campaign.id, updatedAt: bundle.campaign.updatedAt });
+      await IP.transactionToPromise(tx);
+      return bundle.campaign;
+    }
+
+    getCampaign(id) { return this.database.get(IP.STORE_NAMES.campaigns, id); }
+    async getLastCampaign() {
+      const id = await this.database.getMeta('lastCampaignId');
+      return id ? this.getCampaign(id) : null;
+    }
+    async listCampaigns() {
+      const items = await this.database.getAll(IP.STORE_NAMES.campaigns);
+      return items.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    }
+    async listArchives() {
+      const items = await this.database.getAll(IP.STORE_NAMES.archives);
+      return items.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    }
+  }
+
+  return { CampaignStore };
+});
+
 /* ===== src/js/ui/preferences.js ===== */
 (function (root, factory) {
   const namespace = (root.InfinitePaths = root.InfinitePaths || {});
@@ -1175,189 +1366,135 @@
   function renderHomeView(container, context) {
     IP.clearNode(container);
     container.className = 'view view--home';
-
+    const hasCampaign = Boolean(context.lastCampaign);
     const hero = IP.h(
       'section',
       { className: 'hero-card' },
       IP.h('div', { className: 'hero-card__path-mark', attrs: { 'aria-hidden': 'true' } }),
-      IP.h('p', {
-        className: 'eyebrow',
-        text: `FOUNDATION BUILD · v${context.appConfig.version}`,
-      }),
-      IP.h('h1', { id: 'page-title', text: 'Every path begins with rules that hold.' }),
-      IP.h('p', {
-        className: 'hero-card__lead',
-        text:
-          'This installable foundation establishes the reader shell, deterministic seed engine, local data layer, accessibility controls, and offline update system for Infinite Paths.',
-      }),
-      IP.h(
-        'div',
-        { className: 'chip-row', attrs: { 'aria-label': 'Foundation capabilities' } },
-        IP.h('span', { className: 'chip', text: 'Portrait-first' }),
-        IP.h('span', { className: 'chip', text: 'Offline shell' }),
-        IP.h('span', { className: 'chip', text: 'No tracking' }),
-        IP.h('span', { className: 'chip', text: 'Seeded logic' }),
-      ),
+      IP.h('p', { className: 'eyebrow', text: `CAMPAIGN FOUNDATION · v${context.appConfig.version}` }),
+      IP.h('h1', { id: 'page-title', text: hasCampaign ? 'Your established path is waiting.' : 'Create a world whose truth will hold.' }),
+      IP.h('p', { className: 'hero-card__lead', text: hasCampaign ? `${context.lastCampaign.title} is stored locally with its seed, immutable world truth, autosave, and archive record.` : 'The first Horror campaign generator now locks geography, factions, threat capabilities, limitations, hidden truth, and ending conditions before play begins.' }),
+      IP.h('div', { className: 'hero-actions' },
+        hasCampaign ? IP.h('a', { className: 'button button--primary button--wide', text: 'Continue established campaign', attrs: { href: `#/campaign?id=${encodeURIComponent(context.lastCampaign.id)}` } }) : null,
+        IP.h('a', { className: hasCampaign ? 'button button--secondary button--wide' : 'button button--primary button--wide', text: 'Create new campaign', attrs: { href: '#/new' } }),
+        IP.h('a', { className: 'button button--ghost button--wide', text: 'Open campaign archive', attrs: { href: '#/archive' } })
+      )
     );
-
     const settingsStatus = context.settingsStore.status();
-    const statusGrid = IP.h(
-      'section',
-      { className: 'status-grid', attrs: { 'aria-label': 'Application readiness' } },
+    const statusGrid = IP.h('section', { className: 'status-grid', attrs: { 'aria-label': 'Application readiness' } },
       statusTile('Network', context.networkOnline ? 'Online' : 'Offline', context.networkOnline ? 'ready' : 'neutral'),
-      statusTile(
-        'Offline shell',
-        context.serviceWorkerStatus.state === 'ready' ? 'Cached' : context.serviceWorkerStatus.label,
-        context.serviceWorkerStatus.state,
-      ),
-      statusTile(
-        'Local database',
-        context.databaseStatus.state === 'ready' ? 'Healthy' : context.databaseStatus.label,
-        context.databaseStatus.state,
-      ),
-      statusTile(
-        'Preferences',
-        settingsStatus.persistent ? 'Saved locally' : 'Session only',
-        settingsStatus.persistent ? 'persistent' : 'unavailable',
-      ),
+      statusTile('Offline shell', context.serviceWorkerStatus.state === 'ready' ? 'Cached' : context.serviceWorkerStatus.label, context.serviceWorkerStatus.state),
+      statusTile('Local database', context.databaseStatus.state === 'ready' ? 'Healthy' : context.databaseStatus.label, context.databaseStatus.state),
+      statusTile('Campaign', hasCampaign ? 'Ready to resume' : 'None created', hasCampaign ? 'ready' : 'neutral'),
+      statusTile('Preferences', settingsStatus.persistent ? 'Saved locally' : 'Session only', settingsStatus.persistent ? 'persistent' : 'unavailable'),
+      statusTile('Genre pack', 'Horror foundation', 'ready')
     );
-
-    const seedInput = IP.h('input', {
-      className: 'text-input',
-      attrs: {
-        id: 'seed-verifier-input',
-        name: 'seed',
-        type: 'text',
-        autocomplete: 'off',
-        autocapitalize: 'characters',
-        spellcheck: 'false',
-        maxlength: '120',
-        placeholder: 'Enter any memorable seed',
-      },
-    });
-    const seedResult = IP.h('div', {
-      className: 'seed-result',
-      attrs: { id: 'seed-verifier-result', role: 'status', 'aria-live': 'polite' },
-    });
-
-    function verifySeed() {
-      let seed = seedInput.value.trim();
-      if (!seed) {
-        seed = IP.createFreshSeed('PATH');
-        seedInput.value = seed;
-      }
-      const generator = new IP.SeededRandom(seed).derive('foundation-preview');
-      const preview = Array.from({ length: 5 }, () => generator.integer(0, 99));
-      IP.clearNode(seedResult);
-      seedResult.append(
-        IP.h('p', { className: 'seed-result__label', text: 'Deterministic fingerprint' }),
-        IP.h('code', { className: 'seed-result__fingerprint', text: IP.SeededRandom.fingerprint(seed) }),
-        IP.h('p', {
-          className: 'seed-result__sequence',
-          text: `Verification sequence: ${preview.map((value) => String(value).padStart(2, '0')).join(' · ')}`,
-        }),
-        IP.h('p', {
-          className: 'fine-print',
-          text: `The same seed and rules version ${context.appConfig.rulesVersion} will reproduce this result.`,
-        }),
-      );
-    }
-
-    const seedForm = IP.h(
-      'form',
-      {
-        className: 'stack',
-        on: {
-          submit: (event) => {
-            event.preventDefault();
-            verifySeed();
-          },
-        },
-      },
-      IP.h('label', { className: 'field-label', text: 'Seed text', attrs: { for: 'seed-verifier-input' } }),
-      seedInput,
-      IP.h(
-        'div',
-        { className: 'button-row' },
-        IP.h('button', {
-          className: 'button button--primary',
-          text: 'Verify seed',
-          attrs: { type: 'submit' },
-        }),
-        IP.h('button', {
-          className: 'button button--secondary',
-          text: 'Create fresh seed',
-          attrs: { type: 'button' },
-          on: {
-            click: () => {
-              seedInput.value = IP.createFreshSeed('PATH');
-              verifySeed();
-              seedInput.focus();
-              seedInput.select();
-            },
-          },
-        }),
-      ),
-      seedResult,
+    const principle = IP.h('section', { className: 'card card--tinted' },
+      IP.h('p', { className: 'eyebrow', text: 'LOCKED TRUTH' }),
+      IP.h('h2', { text: 'The player changes events, never the facts behind them.' }),
+      IP.h('p', { text: 'Campaign creation uses isolated deterministic streams for geography, factions, antagonist, hidden truth, and future scene selection. Adding descriptive variation later cannot quietly swap the culprit or grant the threat a new power.' })
     );
-
-    const seedCard = IP.h(
-      'section',
-      { className: 'card' },
-      IP.h('p', { className: 'eyebrow', text: 'DETERMINISM CHECK' }),
-      IP.h('h2', { text: 'A seed should be a promise, not a suggestion.' }),
-      IP.h('p', {
-        text:
-          'Use the verifier to confirm that a seed produces a stable fingerprint and sequence. This exercises the same versioned random engine reserved for future campaign generation.',
-      }),
-      seedForm,
-    );
-
-    const install = IP.getInstallGuidance();
-    const installCard = IP.h(
-      'section',
-      { className: 'card card--tinted' },
-      IP.h('p', { className: 'eyebrow', text: 'IPHONE INSTALLATION' }),
-      IP.h('h2', { text: install.title }),
-      IP.h('p', { text: install.detail }),
-    );
-    if (install.steps.length) {
-      installCard.append(
-        IP.h(
-          'ol',
-          { className: 'instruction-list' },
-          install.steps.map((step) => IP.h('li', { text: step })),
-        ),
-      );
-    } else {
-      installCard.append(
-        IP.h('div', {
-          className: 'inline-status',
-          text: 'Standalone display detected',
-          dataset: { tone: 'good' },
-        }),
-      );
-    }
-
-    const privacyCard = IP.h(
-      'section',
-      { className: 'card card--quiet' },
-      IP.h('h2', { text: 'Your paths stay on your device.' }),
-      IP.h('p', {
-        text:
-          'This build sends no analytics and uses no account service. Reading preferences live in small local browser storage, while the campaign-ready database foundation uses IndexedDB.',
-      }),
-      IP.h('p', {
-        className: 'fine-print',
-        text:
-          'The current build intentionally exposes no campaign controls. The creation and save interfaces enter only after their complete data contracts are implemented.',
-      }),
-    );
-
-    container.append(hero, statusGrid, seedCard, installCard, privacyCard);
+    const privacyCard = IP.h('section', { className: 'card card--quiet' }, IP.h('h2', { text: 'Your paths stay on your device.' }), IP.h('p', { text: 'Campaigns, autosaves, archive records, and preferences remain inside local browser storage. Infinite Paths sends no analytics and requires no account.' }));
+    container.append(hero, statusGrid, principle, privacyCard);
   }
 
   return { renderHomeView };
+});
+
+/* ===== src/js/views/create-campaign-view.js ===== */
+(function (root, factory) {
+  const namespace = (root.InfinitePaths = root.InfinitePaths || {});
+  const exported = factory(namespace);
+  Object.assign(namespace, exported);
+  if (typeof module !== 'undefined' && module.exports) module.exports = exported;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (IP) {
+  'use strict';
+  function option(value, text, selected = false) { return IP.h('option', { text, attrs: { value, selected } }); }
+  function field(label, control, hint) {
+    return IP.h('div', { className: 'form-field' }, IP.h('label', { className: 'field-label', text: label, attrs: { for: control.id } }), control, hint ? IP.h('p', { className: 'field-hint', text: hint }) : null);
+  }
+  function renderCreateCampaignView(container, context) {
+    IP.clearNode(container); container.className = 'view';
+    const name = IP.h('input', { id: 'campaign-name', className: 'text-input', attrs: { maxlength: 40, autocomplete: 'name', required: true, placeholder: 'Protagonist name' } });
+    const genre = IP.h('select', { id: 'campaign-genre', className: 'select-input', attrs: { disabled: true } }, option('horror', 'Horror · First vertical slice', true));
+    const difficulty = IP.h('select', { id: 'campaign-difficulty', className: 'select-input' }, option('story', 'Story'), option('standard', 'Standard', true), option('hard', 'Hard'), option('brutal', 'Brutal'));
+    const length = IP.h('select', { id: 'campaign-length', className: 'select-input' }, option('short', 'Short', true), option('standard', 'Standard'));
+    const background = IP.h('select', { id: 'campaign-background', className: 'select-input' }, ...Object.values(IP.BACKGROUNDS).map((item, index) => option(item.id, item.name, index === 0)));
+    const presentation = IP.h('select', { id: 'campaign-presentation', className: 'select-input' }, option('he', 'He / him'), option('she', 'She / her'), option('they', 'They / them', true));
+    const seed = IP.h('input', { id: 'campaign-seed', className: 'text-input', attrs: { maxlength: 120, autocomplete: 'off', spellcheck: 'false', placeholder: 'Leave blank for a fresh seed' } });
+    const error = IP.h('div', { className: 'form-error', attrs: { role: 'alert', 'aria-live': 'assertive' } });
+    const submit = IP.h('button', { className: 'button button--primary button--wide', text: 'Generate locked campaign', attrs: { type: 'submit' } });
+    const form = IP.h('form', { className: 'card campaign-form', on: { submit: async (event) => {
+      event.preventDefault(); error.textContent = ''; submit.disabled = true; submit.textContent = 'Establishing world…';
+      try {
+        const bundle = IP.generateCampaign({ name: name.value, difficulty: difficulty.value, length: length.value, background: background.value, presentation: presentation.value, seed: seed.value, graphicViolence: document.getElementById('graphic-violence').checked, psychologicalHorror: document.getElementById('psychological-horror').checked });
+        await context.campaignStore.createBundle(bundle);
+        context.lastCampaign = bundle.campaign;
+        context.toast.show('Campaign truth locked and saved.', { tone: 'success' });
+        globalThis.location.hash = `#/campaign?id=${encodeURIComponent(bundle.campaign.id)}`;
+      } catch (cause) {
+        error.textContent = String(cause?.message || cause); submit.disabled = false; submit.textContent = 'Generate locked campaign';
+      }
+    } } },
+      field('Genre', genre, 'Horror is the first complete genre vertical slice.'),
+      field('Protagonist name', name), field('Character presentation', presentation), field('Background', background),
+      field('Difficulty', difficulty, 'Brutal mode will never add plot armor.'), field('Campaign length', length),
+      field('World seed', seed, 'The seed, content version, and rules version permanently define campaign truth.'),
+      IP.h('div', { className: 'setting-block' },
+        IP.h('label', { className: 'check-row' }, IP.h('input', { id: 'graphic-violence', attrs: { type: 'checkbox', checked: true } }), IP.h('span', { text: 'Allow graphic violence' })),
+        IP.h('label', { className: 'check-row' }, IP.h('input', { id: 'psychological-horror', attrs: { type: 'checkbox', checked: true } }), IP.h('span', { text: 'Allow psychological horror' }))),
+      error, submit);
+    container.append(IP.h('header', { className: 'view-header' }, IP.h('p', { className: 'eyebrow', text: 'CAMPAIGN CREATION' }), IP.h('h1', { id: 'page-title', text: 'Establish a world that cannot change its story afterward.' }), IP.h('p', { text: 'Creation permanently locks the seed, rules, antagonist, hidden truth, factions, geography, and ending conditions.' })), form);
+  }
+  return { renderCreateCampaignView };
+});
+
+/* ===== src/js/views/campaign-view.js ===== */
+(function (root, factory) {
+  const namespace = (root.InfinitePaths = root.InfinitePaths || {});
+  const exported = factory(namespace);
+  Object.assign(namespace, exported);
+  if (typeof module !== 'undefined' && module.exports) module.exports = exported;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (IP) {
+  'use strict';
+  function fact(label, value) { return IP.h('div', { className: 'world-fact' }, IP.h('span', { text: label }), IP.h('strong', { text: value })); }
+  function list(title, items) { return IP.h('section', { className: 'card' }, IP.h('h2', { text: title }), IP.h('ul', { className: 'detail-list' }, items.map((item) => IP.h('li', { text: item })))); }
+  async function renderCampaignView(container, context) {
+    IP.clearNode(container); container.className = 'view';
+    const params = new URLSearchParams(globalThis.location.hash.split('?')[1] || '');
+    const campaign = await context.campaignStore.getCampaign(params.get('id')) || await context.campaignStore.getLastCampaign();
+    if (!campaign) { globalThis.location.hash = '#/home'; return; }
+    const world = campaign.world;
+    container.append(
+      IP.h('section', { className: 'hero-card campaign-hero' }, IP.h('p', { className: 'eyebrow', text: 'LOCKED CAMPAIGN' }), IP.h('h1', { id: 'page-title', text: campaign.title }), IP.h('p', { className: 'hero-card__lead', text: `${campaign.protagonist.name}, a ${campaign.protagonist.background.name.toLowerCase()}, has entered ${world.region}. The facts below were established at creation and cannot be rewritten by later choices.` }), IP.h('div', { className: 'chip-row' }, IP.h('span', { className: 'chip', text: 'Horror' }), IP.h('span', { className: 'chip', text: campaign.difficulty }), IP.h('span', { className: 'chip', text: campaign.length }))),
+      IP.h('section', { className: 'card world-grid' }, fact('Seed', campaign.seedFingerprint), fact('Settlement', world.settlement), fact('Threat', world.antagonist.name), fact('Rules', campaign.rulesVersion), fact('Content', campaign.contentVersion), fact('Status', 'World established')),
+      list('Known geography', world.geography.majorSites),
+      list('Active factions', world.factions.map((item) => `${item.name}: ${item.agenda}`)),
+      IP.h('section', { className: 'card card--tinted' }, IP.h('p', { className: 'eyebrow', text: 'THREAT RULE' }), IP.h('h2', { text: world.antagonist.name }), IP.h('p', { text: world.antagonist.capabilities[0] }), IP.h('p', { className: 'rule-box', text: `Known limitation: ${world.antagonist.limitations[0]}` })),
+      IP.h('section', { className: 'card' }, IP.h('h2', { text: 'The path is saved.' }), IP.h('p', { text: 'Milestone 2A deliberately ends at the threshold. The campaign record, autosave, archive entry, random streams, and immutable world truth now exist locally.' }), IP.h('a', { className: 'button button--secondary button--wide', text: 'Inspect campaign archive', attrs: { href: '#/archive' } }))
+    );
+  }
+  return { renderCampaignView };
+});
+
+/* ===== src/js/views/archive-view.js ===== */
+(function (root, factory) {
+  const namespace = (root.InfinitePaths = root.InfinitePaths || {});
+  const exported = factory(namespace);
+  Object.assign(namespace, exported);
+  if (typeof module !== 'undefined' && module.exports) module.exports = exported;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (IP) {
+  'use strict';
+  async function renderArchiveView(container, context) {
+    IP.clearNode(container); container.className = 'view';
+    container.append(IP.h('header', { className: 'view-header' }, IP.h('p', { className: 'eyebrow', text: 'CAMPAIGN ARCHIVE' }), IP.h('h1', { id: 'page-title', text: 'Every path leaves a record.' }), IP.h('p', { text: 'Active, completed, failed, and abandoned campaigns share one versioned archive foundation.' })));
+    const archives = await context.campaignStore.listArchives();
+    if (!archives.length) { container.append(IP.h('section', { className: 'card empty-state' }, IP.h('h2', { text: 'No paths recorded yet.' }), IP.h('p', { text: 'Create a campaign and its archive record will be committed in the same database transaction.' }), IP.h('a', { className: 'button button--primary', text: 'Create first campaign', attrs: { href: '#/new' } }))); return; }
+    const list = IP.h('div', { className: 'archive-list' });
+    for (const item of archives) list.append(IP.h('a', { className: 'archive-card', attrs: { href: `#/campaign?id=${encodeURIComponent(item.campaignId)}` } }, IP.h('div', {}, IP.h('p', { className: 'eyebrow', text: `${item.genre.toUpperCase()} · ${item.difficulty.toUpperCase()}` }), IP.h('h2', { text: item.title }), IP.h('p', { text: `${item.protagonist} · ${new Date(item.createdAt).toLocaleDateString()}` })), IP.h('span', { className: 'archive-card__status', text: item.status })));
+    container.append(list);
+  }
+  return { renderArchiveView };
 });
 
 /* ===== src/js/views/settings-view.js ===== */
@@ -1900,6 +2037,8 @@
       this.settingsStore = new IP.SettingsStore();
       this.settings = this.settingsStore.load();
       this.database = new IP.InfinitePathsDatabase();
+      this.campaignStore = new IP.CampaignStore(this.database);
+      this.lastCampaign = null;
       this.databaseStatus = statusRecord('pending', 'Opening local database.');
       this.serviceWorkerStatus = statusRecord('pending', 'Waiting to register offline shell.');
       this.serviceWorkerRegistration = null;
@@ -1967,6 +2106,7 @@
         await this.database.setMeta('buildId', this.appConfig.buildId);
         await this.database.setMeta('saveFormatVersion', this.appConfig.saveFormatVersion);
         await this.database.healthCheck();
+        this.lastCampaign = await this.campaignStore.getLastCampaign();
         this.databaseStatus = statusRecord('ready', 'Local database opened and passed a round-trip check.');
       } catch (error) {
         this.databaseStatus = statusRecord(
@@ -2051,6 +2191,8 @@
         currentRoute: this.currentRoute,
         database: this.database,
         databaseStatus: this.databaseStatus,
+        campaignStore: this.campaignStore,
+        lastCampaign: this.lastCampaign,
         networkOnline: this.networkOnline,
         resetSettings: () => this.resetSettings(),
         saveSettings: (candidate) => this.saveSettings(candidate),
@@ -2088,7 +2230,13 @@
       const context = this.buildContext();
 
       try {
-        if (this.currentRoute === 'settings') {
+        if (this.currentRoute === 'new') {
+          IP.renderCreateCampaignView(this.view, context);
+        } else if (this.currentRoute === 'campaign') {
+          IP.renderCampaignView(this.view, context);
+        } else if (this.currentRoute === 'archive') {
+          IP.renderArchiveView(this.view, context);
+        } else if (this.currentRoute === 'settings') {
           IP.renderSettingsView(this.view, context);
         } else if (this.currentRoute === 'system') {
           IP.renderSystemView(this.view, context);

@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0",
-  "generatedAt": "2026-08-02T22:41:41.366Z",
+  "version": "0.2.0",
+  "generatedAt": "2026-08-03T00:48:10.125Z",
   "sourceFiles": [
     "src/css/tokens.css",
     "src/css/base.css",
@@ -12,11 +12,16 @@
     "src/js/core/seeded-random.js",
     "src/js/storage/settings-store.js",
     "src/js/storage/database.js",
+    "src/js/campaign/campaign-generator.js",
+    "src/js/storage/campaign-store.js",
     "src/js/ui/preferences.js",
     "src/js/ui/router.js",
     "src/js/ui/toast.js",
     "src/js/ui/service-worker.js",
     "src/js/views/home-view.js",
+    "src/js/views/create-campaign-view.js",
+    "src/js/views/campaign-view.js",
+    "src/js/views/archive-view.js",
     "src/js/views/settings-view.js",
     "src/js/views/system-view.js",
     "src/js/app.js",
@@ -37,7 +42,7 @@
     "apple-touch-icon.png"
   ],
   "hashes": {
-    "app.bundle.css": "f03191b15afef6aa5260da1d65ccdb014afd57056ae1d84628c4e7376127da42",
-    "app.bundle.js": "7abbe7019f33f68f5bb766c399ed384daebbe490ece6e606b3334939a4069f61"
+    "app.bundle.css": "456754aecee99b5ec5642b03a666ea976d223b2bbebac9d1765e835077329258",
+    "app.bundle.js": "788c719defb9ff1d03ae4a19dca76cfbbfdc4f744671f92e5adfa0637c133ad4"
   }
 }
